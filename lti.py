@@ -44,7 +44,7 @@ canvas = Canvas(config.CANVAS_URL, config.API_KEY)
 def error(exception=None):
     return Response(
         render_template(
-            "error.htm.j2",
+            "error.html",
             message=exception.get(
                 "exception", "Please contact your System Administrator."
             ),
@@ -62,7 +62,7 @@ def launch(lti=lti):
             "<p>You attempted to access from this domain:<br/>{}</p>"
         )
         return render_template(
-            "error.htm.j2",
+            "error.html",
             message=msg.format(", ".join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
         )
 
@@ -181,7 +181,7 @@ def show_assignments(course_id, lti=lti):
         return error({"exception": err})
 
     return render_template(
-        "assignments.htm.j2", assignments=assignment_quiz_list, course=course
+        "assignments.html", assignments=assignment_quiz_list, course=course
     )
 
 
@@ -357,7 +357,7 @@ def update_assignments(course_id, lti=lti):
 @app.route("/lti.xml", methods=["GET"])
 def xml():
     return Response(
-        render_template("lti.xml.j2", course_nav_disabled=config.DISABLE_COURSE_NAV),
+        render_template("lti.xml", course_nav_disabled=config.DISABLE_COURSE_NAV),
         mimetype="application/xml",
     )
 

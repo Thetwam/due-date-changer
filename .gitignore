@@ -8,3 +8,4 @@ config.py
 *.log
 .coverage
 /htmlcov
+.python-version

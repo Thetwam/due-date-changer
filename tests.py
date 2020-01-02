@@ -47,7 +47,7 @@ class LTITests(flask_testing.TestCase):
     def test_xml(self, m):
         response = self.client.get("/lti.xml")
         self.assert_200(response)
-        self.assert_template_used("lti.xml.j2")
+        self.assert_template_used("lti.xml")
         self.assertIn("application/xml", response.content_type)
 
     # launch()
@@ -84,7 +84,7 @@ class LTITests(flask_testing.TestCase):
         response = self.client.post(signed_url, data=payload)
 
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
 
     def test_launch_no_domain(self, m):
         payload = {"custom_canvas_course_id": "1"}
@@ -100,7 +100,7 @@ class LTITests(flask_testing.TestCase):
 
         # import pdb; pdb.set_trace()
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
 
     # show_assignments()
     def test_show_assignments_role_student(self, m):
@@ -113,7 +113,7 @@ class LTITests(flask_testing.TestCase):
             self.generate_launch_request("/course/1/assignments")
         )
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
         self.assertEqual(str(self.get_context_variable("message")), "Not authorized.")
 
     def test_show_assignments_course_not_found(self, m):
@@ -136,7 +136,7 @@ class LTITests(flask_testing.TestCase):
             self.generate_launch_request("/course/1/assignments")
         )
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
         self.assertEqual(str(self.get_context_variable("message")), "Not Found")
 
     def test_show_assignments_quizzes_not_found(self, m):
@@ -165,7 +165,7 @@ class LTITests(flask_testing.TestCase):
             self.generate_launch_request("/course/1/assignments")
         )
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
         self.assertEqual(str(self.get_context_variable("message")), "Not Found")
 
     def test_show_assignments_assignments_not_found(self, m):
@@ -200,7 +200,7 @@ class LTITests(flask_testing.TestCase):
             self.generate_launch_request("/course/1/assignments")
         )
         self.assert_200(response)
-        self.assert_template_used("error.htm.j2")
+        self.assert_template_used("error.html")
         self.assertEqual(str(self.get_context_variable("message")), "Not Found")
 
     def test_show_assignments(self, m):
@@ -245,7 +245,7 @@ class LTITests(flask_testing.TestCase):
             self.generate_launch_request("/course/1/assignments")
         )
         self.assert_200(response)
-        self.assert_template_used("assignments.htm.j2")
+        self.assert_template_used("assignments.html")
         assignments = self.get_context_variable("assignments")
         self.assertIsInstance(assignments, list)
         self.assertEqual(len(assignments), 4)

@@ -1,4 +1,4 @@
-{% extends "base.htm.j2" %}
+{% extends "base.html" %}
 
 {% block custom_css %}
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap-datetimepicker.css') }}">
@@ -247,7 +247,7 @@
 				type: "POST",
 				url: post_url,
 				data: $(this).serialize()
-			})	
+			})
 			.done(function(data) {
 				update_interval_id = setInterval(checkUpdate, 1000, data.update_assignments_job_url);
 			});
@@ -302,6 +302,8 @@
 				refresh_div.find(".status-msg").html("<span style=\"color: #f00;\">Failed</span>");
 			});
 		}
+
+	$('.collapse').collapse('show'); // TEMPORARY start expanded. Remove.
 
 	</script>
 {% endblock %}
