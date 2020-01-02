@@ -28,3 +28,19 @@ def update_job(job, percent, status_msg, status, error=False):
     job.meta["error"] = error
 
     job.save()
+
+
+def get_base_dates(all_dates):
+    """
+    Extract the base dates for an assignment from a list of all dates.
+
+    :param all_dates: List of dictionaries representing all the dates
+        in a course, as returned from a Canvas assignment object.
+    :type all_dates: list of dicts
+
+    :returns: A dictionary containing the base dates for the assignment.
+    :rtype: dict
+    """
+    for date in all_dates:
+        if date.get("base", False):
+            return date
