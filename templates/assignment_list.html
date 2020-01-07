@@ -1,0 +1,115 @@
+{% for assignment in assignments %}
+<div class="row {{ loop.cycle('odd', '') }}" data-assignment-id="{{ assignment.id }}">
+	<div class="col-xs-12 col-sm-12 col-md-12">
+		<p><strong><a href="{{ config.CANVAS_URL }}/courses/{{ course.id }}/assignments/{{ assignment.id }}" target="_blank">{{ assignment.name }} ({{ assignment.id }})</a></strong></p>
+		{% if assignment is quiz %}
+			<p>Quiz</p>
+		{% elif assignment is discussion %}
+			<p>Discussion</p>
+		{% else %}
+			<p>Assignment</p>
+		{% endif %}
+	</div>
+	{% for section in sections %}
+		<div class="col-xs-12 col-sm-12 col-md-12"><h4>{{section[0]}}</h4></div>
+
+		{% if assignment is quiz %}
+		<input id="{{ assignment.id }}-assignment_type" name="{{section[1]}}-{{ assignment.id }}-assignment_type" type="hidden" value="quiz">
+		<input id="{{ assignment.id }}-quiz_id" name="{{section[1]}}-{{ assignment.id }}-quiz_id" type="hidden" value="{{ assignment.quiz_id }}">
+	{% else %}
+		<input id="{{ assignment.id }}-assignment_type" name="{{section[1]}}-{{ assignment.id }}-assignment_type" type="hidden" value="assignment">
+	{% endif %}
+	<div class="col-xs-12 col-sm-6 col-md-3">
+		<label for="{{ assignment.id }}-due_at">Due At</label>
+		<div class='input-group date picker picker-due'>
+			<input id="{{ assignment.id }}-due_at" name="{{section[1]}}-{{ assignment.id }}-due_at" type="text" class="form-control input-sm" title="Date and Time at which the assignment is due."
+			{% if assignment.due_at_date %}
+				value="{{ assignment.due_at_date | datetime_localize }}"
+			{% endif %}
+			>
+			<span class="input-group-addon">
+				<span class="glyphicon glyphicon-calendar"></span>
+			</span>
+		</div>
+	</div>
+	<div class="col-xs-12 col-sm-6 col-md-1">
+		<label for="{{ assignment.id }}-published">Published</label><br />
+		<input id="{{ assignment.id }}-published" name="{{section[1]}}-{{ assignment.id }}-published" type="checkbox" class="form-check" data-toggle="toggle" data-on="<span class='glyphicon glyphicon-ok'></span>" data-off="<span class='glyphicon glyphicon-remove'></span>" data-offstyle="danger" data-onstyle="success" data-size="small"
+		{% if assignment.published %}
+			checked
+		{% endif %}
+
+		{% if not assignment.unpublishable %}
+			disabled
+			title="This assignment has submissions and cannot be unpublished."
+		{% else %}
+			title="Toggle whether or not an assignment is published."
+		{% endif %}
+		>
+
+		{% if not assignment.unpublishable %}
+			<!-- Hidden input when checkbox is disabled -->
+			<input name="{{section[1]}}-{{ assignment.id }}-published" type="hidden" value="on">
+		{% endif %}
+	</div>
+	<div class="col-xs-12 col-sm-6 col-md-2 col-md-offset-3">
+		<button class="btn btn-primary btn-sm more-button pull-right" type="button" data-toggle="collapse" data-target="[data-assignment-id={{ assignment.id }}] .collapse" aria-expanded="false" aria-controls="collapse">More Options <span class="caret"></span></button>
+	</div>
+	<span class="clearfix"></span>
+	<div class="collapse">
+		<div class="col-xs-12 col-sm-6 col-md-3">
+			<label for="{{ assignment.id }}-unlock_at">Available At</label>
+			<div class='input-group date picker unlock-at'>
+				<input id="{{ assignment.id }}-unlock_at" name="{{section[1]}}-{{ assignment.id }}-unlock_at" type="text" class="form-control input-sm" title="Date and Time at which the assignment is unlocked."
+				{% if assignment.unlock_at_date %}
+					value="{{ assignment.unlock_at_date | datetime_localize }}"
+				{% endif %}
+				>
+				<span class="input-group-addon">
+					<span class="glyphicon glyphicon-calendar"></span>
+				</span>
+			</div>
+		</div>
+		<div class="col-xs-12 col-sm-6 col-md-3">
+			<label for="{{ assignment.id }}-lock_at">Available Until</label>
+			<div class='input-group date picker lock-at'>
+				<input id="{{ assignment.id }}-lock_at" name="{{section[1]}}-{{ assignment.id }}-lock_at" type="text" class="form-control input-sm" title="Date and Time at which the assignment is locked."
+				{% if assignment.lock_at_date %}
+						value="{{ assignment.lock_at_date | datetime_localize }}"
+				{% endif %}
+				>
+				<span class="input-group-addon">
+					<span class="glyphicon glyphicon-calendar"></span>
+				</span>
+			</div>
+		</div>
+
+		{% if assignment is quiz %}
+		<div class="col-xs-12 col-sm-6 col-md-3">
+			<label for="{{ assignment.id }}-show_correct_answers_at">Show Answers</label>
+			<div class='input-group date picker show-at'>
+				<input id="{{ assignment.id }}-show_correct_answers_at" name="{{section[1]}}-{{ assignment.id }}-show_correct_answers_at" type="text" class="form-control input-sm" value="{{ assignment.show_correct_answers_at_date }}" title="Date and Time at which the quiz's correct answers become available for students to view.">
+				<span class="input-group-addon">
+					<span class="glyphicon glyphicon-calendar"></span>
+				</span>
+			</div>
+		</div>
+
+		<div class="col-xs-12 col-sm-6 col-md-3">
+			<label for="{{ assignment.id }}-hide_correct_answers_at">Hide Answers</label>
+			<div class='input-group date picker hide-at'>
+				<input id="{{ assignment.id }}-hide_correct_answers_at" name="{{section[1]}}-{{ assignment.id }}-hide_correct_answers_at" type="text" class="form-control input-sm" value="{{ assignment.hide_correct_answers_at_date }}" title="Date and Time at which the quiz's correct answers become hidden from students.">
+				<span class="input-group-addon">
+					<span class="glyphicon glyphicon-calendar"></span>
+				</span>
+			</div>
+		</div>
+		{% endif %}
+	</div><!-- /collapse -->
+	{% endfor %}
+</div>
+{% else %}
+<div class="row odd">
+<p class="text-center">No Assignments Found</p>
+</div>
+{% endfor %}

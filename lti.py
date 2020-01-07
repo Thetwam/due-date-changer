@@ -156,6 +156,9 @@ def show_assignments(course_id, lti=lti):
         course = canvas.get_course(course_id)
         assignments = course.get_assignments()
         quiz_dict = {quiz.id: quiz for quiz in course.get_quizzes()}
+        sections = [(section.name, section.id) for section in course.get_sections()]
+        sections.insert(0, ('Everyone', 0))
+        sections.sort(key=lambda x: x[1])
     except CanvasException as err:
         app.logger.exception(
             "Error getting course, assignments or quizzes from Canvas."
@@ -181,7 +184,7 @@ def show_assignments(course_id, lti=lti):
         return error({"exception": err})
 
     return render_template(
-        "assignments.html", assignments=assignment_quiz_list, course=course
+        "assignments.html", assignments=assignment_quiz_list, course=course, sections=sections
     )
 
 
@@ -227,6 +230,7 @@ def update_assignments_background(course_id, post_data):
     :type course_id: int
     """
     job = get_current_job()
+    app.logger.debug("Job Starting... " + str(job))
 
     update_job(job, 0, "Starting...", "started")
 
@@ -238,87 +242,95 @@ def update_assignments_background(course_id, post_data):
         update_job(job, 0, msg, "failed", error=True)
         return job.meta
 
-    assignment_field_map = defaultdict(dict)
+    assignment_field_map = defaultdict(lambda: defaultdict(dict))
 
     for key, value in post_data.items():
-        if not re.match(r"\d+-[a-z_]+", key):
+        if not re.match(r"\d+-\d+-[a-z_]+", key):
             continue
 
-        assignment_id, field_name = key.split("-")
-        assignment_field_map[assignment_id].update({field_name: value})
+        section_id, assignment_id, field_name = key.split("-")
+        assignment_field_map[assignment_id][section_id].update({field_name: value})
 
     num_assignments = len(assignment_field_map)
+
+    app.logger.debug(assignment_field_map)
 
     if num_assignments < 1:
         update_job(job, 0, "There were no assignments to update.", "failed", error=True)
         return job.meta
 
     updated_list = []
-    for index, (assignment_id, field) in enumerate(assignment_field_map.items(), 1):
-        assignment_type = field.get("assignment_type", "assignment")
-        quiz_id = field.get("quiz_id")
-
-        payload = {
-            "published": field.get("published") == "on",
-            "due_at": fix_date(field.get("due_at")),
-            "lock_at": fix_date(field.get("lock_at")),
-            "unlock_at": fix_date(field.get("unlock_at")),
-        }
-
-        comp_perc = int((index / num_assignments) * 100)
-        msg = "Updating Assignment #{} [{} of {}]"
-        update_job(
-            job,
-            comp_perc,
-            msg.format(assignment_id, index, num_assignments),
-            "processing",
-            error=False,
-        )
-
-        if assignment_type == "quiz" and quiz_id:
-            payload.update(
-                {
-                    "show_correct_answers_at": fix_date(
-                        field.get("show_correct_answers_at")
-                    ),
-                    "hide_correct_answers_at": fix_date(
-                        field.get("hide_correct_answers_at")
-                    ),
-                }
+    for index, (assignment_id, vals_by_section) in enumerate(assignment_field_map.items(), 1):
+        for section_id, field in vals_by_section.items():
+            app.logger.debug(
+                f"Assignment: {assignment_id}\nSection: {section_id}\nData: {field}"
             )
 
-            try:
-                quiz = course.get_quiz(quiz_id)
-                quiz.edit(quiz=payload)
-                updated_list.append(
-                    {"id": assignment_id, "title": quiz.title, "type": "Quiz"}
+            if int(section_id) == 0:  # Section #0 is "Everyone"
+                assignment_type = field.get("assignment_type", "assignment")
+                quiz_id = field.get("quiz_id")
+
+                payload = {
+                    "published": field.get("published") == "on",
+                    "due_at": fix_date(field.get("due_at")),
+                    "lock_at": fix_date(field.get("lock_at")),
+                    "unlock_at": fix_date(field.get("unlock_at")),
+                }
+
+                comp_perc = int((index / num_assignments) * 100)
+                msg = "Updating Assignment #{} [{} of {}]"
+                update_job(
+                    job,
+                    comp_perc,
+                    msg.format(assignment_id, index, num_assignments),
+                    "processing",
+                    error=False,
                 )
-            except CanvasException:
-                msg = "Error getting/editing quiz #{}.".format(quiz_id)
 
-                app.logger.exception(msg)
-                update_job(job, comp_perc, msg, "failed", error=True)
+                if assignment_type == "quiz" and quiz_id:
+                    payload.update(
+                        {
+                            "show_correct_answers_at": fix_date(
+                                field.get("show_correct_answers_at")
+                            ),
+                            "hide_correct_answers_at": fix_date(
+                                field.get("hide_correct_answers_at")
+                            ),
+                        }
+                    )
 
-                return job.meta
+                    try:
+                        quiz = course.get_quiz(quiz_id)
+                        quiz.edit(quiz=payload)
+                        updated_list.append(
+                            {"id": assignment_id, "title": quiz.title, "type": "Quiz"}
+                        )
+                    except CanvasException:
+                        msg = "Error getting/editing quiz #{}.".format(quiz_id)
 
-        else:
-            try:
-                assignment = course.get_assignment(assignment_id)
-                assignment.edit(assignment=payload)
-                updated_list.append(
-                    {
-                        "id": assignment_id,
-                        "title": assignment.name,
-                        "type": "Assignment",
-                    }
-                )
-            except CanvasException:
-                msg = "Error getting/editing assignment #{}.".format(assignment_id)
+                        app.logger.exception(msg)
+                        update_job(job, comp_perc, msg, "failed", error=True)
 
-                app.logger.exception(msg)
-                update_job(job, comp_perc, msg, "failed", error=True)
+                        return job.meta
 
-                return job.meta
+                else:
+                    try:
+                        assignment = course.get_assignment(assignment_id)
+                        assignment.edit(assignment=payload)
+                        updated_list.append(
+                            {
+                                "id": assignment_id,
+                                "title": assignment.name,
+                                "type": "Assignment",
+                            }
+                        )
+                    except CanvasException:
+                        msg = "Error getting/editing assignment #{}.".format(assignment_id)
+
+                        app.logger.exception(msg)
+                        update_job(job, comp_perc, msg, "failed", error=True)
+
+                        return job.meta
 
     msg = "Successfully updated {} assignments.".format(len(updated_list))
     update_job(job, 100, msg, "complete", error=False)
