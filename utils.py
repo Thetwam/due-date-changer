@@ -44,3 +44,22 @@ def get_base_dates(all_dates):
     for date in all_dates:
         if date.get("base", False):
             return date
+
+
+def get_section_override(overrides, section_id):
+    """
+    Search the provided overrides for an override matching the provided
+    section ID.
+
+    :param overrides: List of assignment overrides to search through
+    :type overrides: iterable of :class:`canvasapi.assignment.AssignmentGroup` objects
+    :param section_id: The Canvas ID of the section to search for
+    :type section_id: int
+
+    :returns: The assignment override for the specified section, if any.
+    :rtype: :class:`canvasapi.assignment.AssignmentGroup` or None
+    """
+    for override in overrides:
+        if hasattr(override, 'course_section_id') and override.course_section_id == section_id:
+            return override
+    return None

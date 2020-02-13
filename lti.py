@@ -21,7 +21,7 @@ from rq import get_current_job, Queue
 from rq.job import Job
 from rq.exceptions import NoSuchJobError
 
-from utils import fix_date, update_job
+from utils import fix_date, get_base_dates, get_section_override, update_job
 import config
 
 app = Flask(__name__)
@@ -154,7 +154,7 @@ def status():  # pragma:nocover
 def show_assignments(course_id, lti=lti):
     try:
         course = canvas.get_course(course_id)
-        assignments = course.get_assignments()
+        assignments = course.get_assignments(include=["all_dates", "overrides"])
         quiz_dict = {quiz.id: quiz for quiz in course.get_quizzes()}
         sections = [(section.name, section.id) for section in course.get_sections()]
         sections.insert(0, ('Everyone', 0))
@@ -384,6 +384,17 @@ def datetime_localize(utc_datetime, format=config.LOCAL_TIME_FORMAT):
     local_datetime = utc_datetime.astimezone(new_tz)
 
     return local_datetime.strftime(format)
+
+
+@app.context_processor
+def filter_section():
+    def wrapped(assignment, section_id):
+        if section_id == 0:
+            return get_base_dates(assignment.all_dates)
+        else:
+            return get_section_override(assignment.overrides, section_id)
+
+    return dict(filter_section=wrapped)
 
 
 @app.template_test("quiz")
